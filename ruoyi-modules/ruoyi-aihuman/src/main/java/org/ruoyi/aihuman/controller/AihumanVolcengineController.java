@@ -44,6 +44,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  *
  * @author ruoyi
  */
+
 // 临时免登录
 @SaIgnore
 

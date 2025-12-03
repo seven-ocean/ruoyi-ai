@@ -19,7 +19,9 @@ import java.util.Arrays;
  *
  * @author QingYunAI
  */
+//临时免登录
 @SaIgnore
+
 @Validated
 @RequiredArgsConstructor
 @RestController
