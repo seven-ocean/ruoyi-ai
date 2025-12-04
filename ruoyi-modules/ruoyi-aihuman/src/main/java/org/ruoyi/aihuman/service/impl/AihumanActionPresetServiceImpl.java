@@ -12,6 +12,8 @@ import org.ruoyi.aihuman.domain.bo.AihumanActionPresetBo;
 import org.ruoyi.aihuman.domain.vo.AihumanActionPresetVo;
 import org.ruoyi.aihuman.domain.AihumanActionPreset;
 import org.ruoyi.aihuman.mapper.AihumanActionPresetMapper;
+import org.ruoyi.aihuman.mapper.AihumanKeywordMapper;
+import org.ruoyi.common.core.exception.ServiceException;
 import org.ruoyi.aihuman.service.AihumanActionPresetService;
 import org.ruoyi.common.core.utils.StringUtils;
 
@@ -30,6 +32,7 @@ import java.util.Collection;
 public class AihumanActionPresetServiceImpl implements AihumanActionPresetService {
 
     private final AihumanActionPresetMapper baseMapper;
+    private final AihumanKeywordMapper keywordMapper;
 
     /**
      * 查询关键词管理
@@ -108,7 +111,14 @@ public class AihumanActionPresetServiceImpl implements AihumanActionPresetServic
     @Override
     public Boolean deleteWithValidByIds(Collection<String> ids, Boolean isValid) {
         if (isValid) {
-            //TODO 做一些业务上的校验,判断是否需要校验
+            for (String id : ids) {
+                com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<org.ruoyi.aihuman.domain.AihumanKeyword> q = com.baomidou.mybatisplus.core.toolkit.Wrappers.lambdaQuery();
+                q.eq(org.ruoyi.aihuman.domain.AihumanKeyword::getActionId, id);
+                Long count = keywordMapper.selectCount(q);
+                if (count > 0) {
+                    throw new ServiceException("存在关联的关键词，无法删除动作预设");
+                }
+            }
         }
         return baseMapper.deleteBatchIds(ids) > 0;
     }

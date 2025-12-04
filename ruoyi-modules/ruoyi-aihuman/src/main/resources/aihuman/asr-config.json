@@ -1,0 +1,17 @@
+{
+  "platform": "aliyun-asr",
+  "apiKey": "sk-111d18189c244c22866b76f6c6e9189d",
+  "model": "fun-asr-realtime",
+  "format": "pcm",
+  "sampleRate": 16000,
+  "audio": {
+    "sampleRate": 16000,
+    "sampleSizeInBits": 16,
+    "channels": 1,
+    "signed": true,
+    "bigEndian": false,
+    "bufferSize": 1024,
+    "durationMs": 300000,
+    "sleepMs": 20
+  }
+}

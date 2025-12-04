@@ -20,6 +20,7 @@
         <easyexcel.version>3.2.1</easyexcel.version>
         <jna.version>5.13.0</jna.version>
         <java-websocket.version>1.5.5</java-websocket.version>
+        <dashscope-sdk-java.version>2.2.2</dashscope-sdk-java.version>
     </properties>
 
     <!-- 按照用户要求，不添加任何依赖 -->
@@ -89,6 +90,20 @@
             <groupId>org.java-websocket</groupId>
             <artifactId>Java-WebSocket</artifactId>
             <version>${java-websocket.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <!-- 请将 'the-latest-version' 替换为最新版本号：https://mvnrepository.com/artifact/com.alibaba/dashscope-sdk-java -->
+            <version>${dashscope-sdk-java.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dashscope-sdk-java</artifactId>
+            <version>2.20.0</version>
+            <scope>compile</scope>
         </dependency>
 
     </dependencies>

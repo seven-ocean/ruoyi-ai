@@ -254,3 +254,70 @@ WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `tenant_id`='000000' AND `
 
 ## 调整功能
 ### 关键词管理
+1、 aihuman_keyword 是 aihuman_action_preset 的子表，aihuman_keyword 的 action_id，action_code 对应 aihuman_action_preset 的 id，action_code
+2、 aihuman_action_preset 和 aihuman_keyword 的逻辑就像 sys_dict_type 和 sys_dict_data 的逻辑
+3、 针对上述情况，增加后端代码
+4、 完成上述人物后，提供接口 curl 调用方式，追加到这个 AiCode.md 文件末尾
+
+### API 调用示例
+- 获取动作预设列表
+  - `curl -X GET "http://localhost:6039/aihuman/aihumanActionPreset/list?pageNum=1&pageSize=10" -H "Authorization: Bearer <token>"`
+- 新增动作预设
+  - `curl -X POST "http://localhost:6039/aihuman/aihumanActionPreset" -H "Content-Type: application/json" -H "Authorization: Bearer <token>" -d "{\"actionCode\":\"wave_hand\",\"name\":\"挥手动作\",\"status\":\"0\"}"`
+- 根据动作ID获取关键词列表
+  - `curl -X GET "http://localhost:6039/aihuman/aihumanKeyword/listByAction/1" -H "Authorization: Bearer <token>"`
+- 根据动作编码获取关键词列表
+  - `curl -X GET "http://localhost:6039/aihuman/aihumanKeyword/listByActionCode/wave_hand" -H "Authorization: Bearer <token>"`
+- 新增关键词并关联动作（通过动作编码自动补全ID）
+  - `curl -X POST "http://localhost:6039/aihuman/aihumanKeyword" -H "Content-Type: application/json" -H "Authorization: Bearer <token>" -d "{\"keyword\":\"挥手\",\"type\":\"3\",\"matchMode\":\"0\",\"priority\":80,\"status\":\"0\",\"publish\":\"1\",\"actionCode\":\"wave_hand\"}"`
+- 删除动作预设（若存在关联关键词将被拒绝）
+  - `curl -X DELETE "http://localhost:6039/aihuman/aihumanActionPreset/1" -H "Authorization: Bearer <token>"`
+
+
+
+
+# 接下来的任务
+在ruoyi-aihuman继续迭代功能
+
+## 要求
+1、要符合这个工程文件的目录结构和代码规范
+2、要在这个工程文件的基础上继续迭代，不能完全重新开始
+
+## 调整功能
+### AihumanActionPreset 增加 ASR 触发按钮，我会在前端列表的每行数据增加一个按钮，按钮文字为 "ASR 识别"，点进去有一个小窗口，长按按钮就能输入语音，松开按钮语音输入结束，随后会调用 ASR 接口，用于触发 ASR 识别
+1、AihumanActionPreset 的 params_schema 有 ASR 接口参数，参数为：
+{
+  "platform": "aliyun-asr",
+  "apiKey": "sk-111d18189c244c22866b76f6c6e9189d",
+  "model": "fun-asr-realtime",
+  "format": "pcm",
+  "sampleRate": 16000,
+  "audio": {
+    "sampleRate": 16000,
+    "sampleSizeInBits": 16,
+    "channels": 1,
+    "signed": true,
+    "bigEndian": false,
+    "bufferSize": 1024,
+    "durationMs": 300000,
+    "sleepMs": 20
+  }
+}
+2、目前只打通了 aliyun asr 接口，后续可以根据需要增加其他 ASR 接口，因此需要 if 判断 params_schema 中的 platform 字段
+3、如果 platform 是 aliyun-asr，则调用 aliyun asr 接口
+4、如果 platform 是其他值，则返回错误信息 "不支持的 ASR 平台"
+5、如果调用 ASR 接口失败，则返回错误信息 "ASR 接口调用失败"
+6、如果调用 ASR 接口成功，则返回 ASR 识别结果，返回结果示例：
+{
+  "code": 200,
+  "msg": "success",
+  "data": {
+    "result": "开始了吗？",    // ASR 识别结果
+    "match_keyword": "开始",  // 匹配到的AihumanKeyword的关键词keyword
+    "match_action_code": "start_interaction", // 匹配到的AihumanActionPreset的动作编码actionCode
+    "match_action_name": "开始交互" // 匹配到的AihumanActionPreset的动作名称name
+    "is_match": true // 是否匹配到关键词
+  }
+}
+### 提供curl调用示例，追加到这里
+
