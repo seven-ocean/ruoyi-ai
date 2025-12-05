@@ -319,5 +319,124 @@ WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `tenant_id`='000000' AND `
     "is_match": true // 是否匹配到关键词
   }
 }
-### 提供curl调用示例，追加到这里
 
+### 提供curl调用示例，追加到这里
+- 调用 ASR 识别（上传音频文件，按动作ID）
+  - `curl -X POST "http://localhost:6039/aihuman/aihumanActionPreset/asr/1" -H "Authorization: Bearer <token>" -F "audio=@voice.pcm"`
+- 调用 ASR 识别（上传 Base64 音频，按动作ID）
+  - `curl -X POST "http://localhost:6039/aihuman/aihumanActionPreset/asr/1" -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Bearer <token>" -d "audioBase64=$(base64 -w0 voice.pcm)"`
+- 获取关键词列表（按动作编码）
+  - `curl -X GET "http://localhost:6039/aihuman/aihumanKeyword/listByActionCode/start_interaction" -H "Authorization: Bearer <token>"`
+
+
+
+# 接下来的任务
+在ruoyi-aihuman继续迭代功能
+
+## 要求
+1、要符合这个工程文件的目录结构和代码规范
+2、要在这个工程文件的基础上继续迭代，不能完全重新开始
+
+## 调整功能
+### AihumanConfig 增加 actionParams（Json）字段 
+1、AihumanConfig 的 actionParams 字段用于存储动作的参数，参数为 Json 格式
+2、在调用动作时，会将 actionParams 中的参数传递给动作
+3、actionParams 中的参数可以是任意 Json 格式，例如：
+{
+  "platform": "live2d",
+  "Expressions": [
+			{
+				"Name": "kaixin",
+				"action_code": "smile_action"
+			},
+			{
+				"Name": "shibai",
+				"action_code": "cry_action"
+			}
+		]
+}
+4、action_code 字段用于指定动作的编码，动作编码在 AihumanActionPreset 中是唯一的
+5、在调用动作时，会根据 action_code 字段指定的动作编码，前端去调用对应的动作 playExpression(${Name});
+
+后端改动
+- 实体增加字段：`AihumanConfig.actionParams`，用于存储动作参数（Json）
+  - 路径：`ruoyi-modules/ruoyi-aihuman/src/main/java/org/ruoyi/aihuman/domain/AihumanConfig.java:51-53`
+- 业务对象增加字段：`AihumanConfigBo.actionParams`，支持表单传入与查询
+  - 路径：`ruoyi-modules/ruoyi-aihuman/src/main/java/org/ruoyi/aihuman/domain/bo/AihumanConfigBo.java:52-54`
+- 视图对象增加字段：`AihumanConfigVo.actionParams`，用于导出与回显
+  - 路径：`ruoyi-modules/ruoyi-aihuman/src/main/java/org/ruoyi/aihuman/domain/vo/AihumanConfigVo.java:54-57`
+- 查询支持：在列表查询中允许对 `actionParams` 做部分匹配
+  - 路径：`ruoyi-modules/ruoyi-aihuman/src/main/java/org/ruoyi/aihuman/service/impl/AihumanConfigServiceImpl.java:68`
+
+前端使用建议
+- 在加载某个 `AihumanConfig` 时读取其 `actionParams`，解析出 `Expressions` 列表
+- 当触发某个 `action_code` 对应的动作时，取出同条目中的 `Name`（或其他参数），调用前端的 `playExpression(Name)`
+- 若动作需要更多参数，可在 `actionParams` 中扩展字段，前端按约定解析并传递
+
+
+
+
+
+# 接下来的任务
+在ruoyi-aihuman继续迭代功能
+
+## 要求
+1、要符合这个工程文件的目录结构和代码规范
+2、要在这个工程文件的基础上继续迭代，不能完全重新开始
+
+## 调整功能
+### AihumanConfig 增加 前端可用的语音交互按钮 的接口，长按后录制声音，松开后将声音数据发送 ASR 识别，返回 ASR 识别结果，且关联 AihumanActionPreset 和 AihumanConfig 的 actionParams（Json）
+1、前端调用该接口，会返回 ASR 识别结果
+2、如果 ASR 识别结果匹配到 AihumanKeyword 中的关键词，则会调用对应的 AihumanActionPreset 中的动作
+3、如果 ASR 识别结果没有匹配到关键词，则会返回错误信息 "未匹配到关键词"
+4、如果调用 ASR 接口失败，则会返回错误信息 "ASR 接口调用失败"
+5、如果调用动作失败，则会返回错误信息 "动作调用失败"
+6、如果 ASR 识别结果匹配到 AihumanKeyword 中的关键词，且关键词关联了 AihumanActionPreset 中的动作，且动作需要参数，则会将 AihumanConfig 中的 actionParams 中的参数传递给动作
+例如：ASR 匹配到的 AihumanActionPreset 动作参数为 smile_action，那么进一步再从 AihumanConfig 中的 actionParams 中取出 {"platform": "live2d", "Expressions": [{"Name": "kaixin", "action_code": "smile_action"}]}，根据 Name 调用前端的 playExpression("kaixin")
+7、ASR 语音接口接收方式需要参考下 AihumanActionPresetController 的 asr 接口，支持上传音频文件和 Base64 编码的音频数据
+8、整体流程：前端调用交互按钮接口，长按后录制声音，松开后将声音数据发送 ASR 识别，返回 ASR 识别结果，若匹配到 AihumanActionPreset 的关键词 action_code，则根据 action_code 去AihumanConfig的actionParams（Json）匹配Live2d平台动作参数 （smile_action 匹配到 live2d 的 Expressions -> kaixin ）调用对应的动作，若未匹配到关键词，则返回错误信息 "未匹配到关键词"
+
+### 提供接口的curl示例，追加到这里
+- 交互按钮接口（按配置ID上传音频文件）
+  - `curl -X POST "http://localhost:6039/aihuman/aihumanConfig/asr/5" -H "Authorization: Bearer <token>" -F "audio=@voice.wav"`
+- 交互按钮接口（按配置ID上传 Base64 音频，Linux/macOS）
+  - `curl -X POST "http://localhost:6039/aihuman/aihumanConfig/asr/5" -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Bearer <token>" -d "audioBase64=$(base64 -w0 voice.wav)"`
+- 交互按钮接口（按配置ID上传 Base64 音频，Windows PowerShell）
+  - `$b64 = [Convert]::ToBase64String([IO.File]::ReadAllBytes("voice.wav"))`
+  - `curl -X POST "http://localhost:6039/aihuman/aihumanConfig/asr/5" -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Bearer <token>" -d "audioBase64=$b64"`
+- 返回示例（命中关键词并映射 Live2d 表达/动作）
+  - `{ "code":200, "msg":"success", "data": { "result":"开始了吗", "match_keyword":"开始", "match_action_code":"smile_action", "match_action_name":"微笑动作", "expression_name":"kaixin", "expression_platform":"live2d", "motions_name":"Tap", "is_match":true } }`
+- 未命中关键词
+  - `{ "code":500, "msg":"未匹配到关键词", "data": {"result":"开始了吗", "match_keyword":"", "match_action_code":"", "match_action_name":"", "expression_name":"", "expression_platform":"", "motions_name":"", "is_match":false} }`
+
+
+
+
+# 接下来的任务
+在ruoyi-aihuman继续迭代功能
+
+## 要求
+1、要符合这个工程文件的目录结构和代码规范
+2、要在这个工程文件的基础上继续迭代，不能完全重新开始
+
+## 调整功能
+### AihumanConfig 的 actionParams（Json）
+{
+    "platform": "live2d",
+    "Expressions": [
+        {
+            "Name": "Smile",
+            "action_code": "smile_action"
+        }
+    ],
+    // 某些数字人额外有Motions
+    "Motions": [
+        {
+            "Name": "Tap",
+            "action_code": "watch_time"
+        }
+    ]
+}
+1、Motions 中的 action_code 也需要在 AihumanActionPreset 中配置（这里配置方式与 Expressions 相同），且需要在 AihumanConfig 中关联到对应的动作
+2、AihumanConfigController asr 接口需要额外返回 motions_name，用于前端调用动作
+3、前端调用动作时，需要传递 motions_name 参数，用于指定调用哪个动作，前端执行 playMotion(motions_name)

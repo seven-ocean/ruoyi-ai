@@ -51,6 +51,11 @@ public class AihumanConfigVo implements Serializable {
     @ExcelProperty(value = "agentParams")
     private String agentParams;
     /**
+     * actionParams（Json）
+     */
+    @ExcelProperty(value = "actionParams")
+    private String actionParams;
+    /**
      * createTime
      */
     @ExcelProperty(value = "createTime")

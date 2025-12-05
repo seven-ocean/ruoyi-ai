@@ -60,6 +60,8 @@ public class AihumanKeywordBo implements Serializable {
     private String publish;
     private String actionId;
     private String actionCode;
+    private String configId;
+    private String realConfigId;
     /**
      * 动作参数(JSON)
      */

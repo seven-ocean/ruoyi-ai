@@ -49,6 +49,10 @@ public class AihumanConfigBo implements Serializable {
      */
     private String agentParams;
     /**
+     * actionParams（Json）
+     */
+    private String actionParams;
+    /**
      * createTime
      */
     private LocalDateTime createTime;

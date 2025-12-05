@@ -71,6 +71,8 @@ public class AihumanKeywordServiceImpl implements AihumanKeywordService {
                     lqw.eq(bo.getPriority() != null, AihumanKeyword::getPriority, bo.getPriority());
                     lqw.eq(StringUtils.isNotBlank(bo.getStatus()), AihumanKeyword::getStatus, bo.getStatus());
                     lqw.eq(StringUtils.isNotBlank(bo.getPublish()), AihumanKeyword::getPublish, bo.getPublish());
+                    lqw.eq(StringUtils.isNotBlank(bo.getConfigId()), AihumanKeyword::getConfigId, bo.getConfigId());
+                    lqw.eq(StringUtils.isNotBlank(bo.getRealConfigId()), AihumanKeyword::getRealConfigId, bo.getRealConfigId());
                     lqw.eq(StringUtils.isNotBlank(bo.getActionId()), AihumanKeyword::getActionId, bo.getActionId());
                     lqw.eq(StringUtils.isNotBlank(bo.getActionCode()), AihumanKeyword::getActionCode, bo.getActionCode());
                     lqw.like(StringUtils.isNotBlank(bo.getActionParams()), AihumanKeyword::getActionParams, bo.getActionParams());

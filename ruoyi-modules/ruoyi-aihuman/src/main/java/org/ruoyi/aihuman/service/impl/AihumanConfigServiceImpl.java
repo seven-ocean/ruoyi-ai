@@ -65,6 +65,7 @@ public class AihumanConfigServiceImpl implements AihumanConfigService {
                     lqw.eq(StringUtils.isNotBlank(bo.getModelPath()), AihumanConfig::getModelPath, bo.getModelPath());
                     lqw.eq(StringUtils.isNotBlank(bo.getModelParams()), AihumanConfig::getModelParams, bo.getModelParams());
                     lqw.eq(StringUtils.isNotBlank(bo.getAgentParams()), AihumanConfig::getAgentParams, bo.getAgentParams());
+                    lqw.like(StringUtils.isNotBlank(bo.getActionParams()), AihumanConfig::getActionParams, bo.getActionParams());
                     lqw.eq(bo.getCreateTime() != null, AihumanConfig::getCreateTime, bo.getCreateTime());
                     lqw.eq(bo.getUpdateTime() != null, AihumanConfig::getUpdateTime, bo.getUpdateTime());
                     lqw.eq(bo.getStatus() != null, AihumanConfig::getStatus, bo.getStatus());
