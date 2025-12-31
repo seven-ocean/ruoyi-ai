@@ -440,3 +440,157 @@ WHERE NOT EXISTS (SELECT 1 FROM `sys_dict_data` WHERE `tenant_id`='000000' AND `
 1、Motions 中的 action_code 也需要在 AihumanActionPreset 中配置（这里配置方式与 Expressions 相同），且需要在 AihumanConfig 中关联到对应的动作
 2、AihumanConfigController asr 接口需要额外返回 motions_name，用于前端调用动作
 3、前端调用动作时，需要传递 motions_name 参数，用于指定调用哪个动作，前端执行 playMotion(motions_name)
+
+
+
+
+# 接下来的任务
+在ruoyi-aihuman继续迭代功能
+
+## 要求
+1、要符合这个工程文件的目录结构和代码规范
+2、要在这个工程文件的基础上继续迭代，不能完全重新开始
+
+## 调整功能
+### AihumanConfig 的 actionParams（Json）
+{
+    "platform": "live2d",
+    "Expressions": [
+        {
+            "Name": "kaixin",
+            "action_code": "smile_action"
+        },
+        {
+            "Name": "shibai",
+            "action_code": "cry_action"
+        }
+    ],
+    // 某些数字人额外有WakeUp
+    "WakeUp": {
+        "action_code": "start_interaction",
+        "responses": "主人我在呢！"
+    }
+}
+
+1、WakeUp 中的 action_code 也需要在 AihumanActionPreset 中配置（这里配置方式与 Expressions 相同），且需要在 AihumanConfig 中关联对应 的 responses
+
+2、AihumanConfigController asr 接口执行后，如果匹配到了 start_interaction 动作，那么就会调用语音合成接口，将 responses 中的内容合成语音，语音合成接口的参数在 AihumanConfig 的 agentParams 中配置，例如：
+{
+    "agent": "coze",
+    "agentConfig": {
+        "apiUrl": "https://api.coze.cn/v3/chat",
+        "authorizationToken": "sat_8T9q3ZjHmSFiyfTm5zvAEDv3HaAvLrS3J8aiIKrqP4qgTGCF39J7dRNUMM8NPYAn",
+        "botId": "7506335095931338792",
+        "userId": "7376476310010937396"
+    },
+    "voice": "volcengine-tts",
+    "voiceConfig": {
+        "ENDPOINT": "wss://openspeech.bytedance.com/api/v3/tts/bidirection",
+        "appId": "1055299334",
+        "accessToken": "fOHuq4R4dirMYiOruCU3Ek9q75zV0KVW",
+        "resourceId": "seed-tts-2.0",
+        "voice": "saturn_zh_female_tiaopigongzhu_tob",
+        "text": "",
+        "encoding": "wav"
+    }
+}
+
+3、前端调用语音合成接口时，需要传递 text 参数，用于指定要合成的文本，例如：
+{
+  "ENDPOINT": "wss://openspeech.bytedance.com/api/v3/tts/bidirection",
+  "appId": "1055299334",
+  "accessToken": "fOHuq4R4dirMYiOruCU3Ek9q75zV0KVW",
+  "resourceId": "seed-tts-2.0",
+  "voice": "saturn_zh_female_tiaopigongzhu_tob",
+  "text": "主人我在呢！",
+  "encoding": "wav"
+}
+实际调用可以看下 /aihuman/volcengine/generate-voice-direct 接口
+
+4、前端调用语音合成接口后，需要返回合成的语音数据，前端需要将语音数据播放出来，例如：
+Request URL
+blob:http://localhost:5666/8c1e5bcf-5fc0-47e5-a533-145f757094bb
+Request Method
+GET
+
+5、最终触发前端的数字人播放
+
+### 参考下 AihumanVolcengineController 向前端提供的接口，并提供curl示例，追加到这里
+
+- 生成音频并直接返回二进制（WAV）：
+  - `curl -X POST "http://localhost:6039/aihuman/volcengine/generate-voice-direct" -H "Content-Type: application/json" -H "Authorization: Bearer <token>" -d '{
+    "ENDPOINT": "wss://openspeech.bytedance.com/api/v3/tts/bidirection",
+    "appId": "1055299334",
+    "accessToken": "fOHuq4R4dirMYiOruCU3Ek9q75zV0KVW",
+    "resourceId": "seed-tts-2.0",
+    "voice": "saturn_zh_female_tiaopigongzhu_tob",
+    "text": "主人我在呢！",
+    "encoding": "wav"
+  }' -o voice.wav`
+
+- 生成音频文件并返回播放地址：
+  - `curl -X POST "http://localhost:6039/aihuman/volcengine/generate-voice" -H "Content-Type: application/json" -H "Authorization: Bearer <token>" -d '{
+    "ENDPOINT": "wss://openspeech.bytedance.com/api/v3/tts/bidirection",
+    "appId": "1055299334",
+    "accessToken": "fOHuq4R4dirMYiOruCU3Ek9q75zV0KVW",
+    "resourceId": "seed-tts-2.0",
+    "voice": "saturn_zh_female_tiaopigongzhu_tob",
+    "text": "主人我在呢！",
+    "encoding": "wav"
+  }'`
+  - 返回示例：`{"audioUrl":"http://localhost:6039/voice/voice_20251205xxxxxx_xxxxxxxx.wav"}`
+
+### AihumanConfig 交互接口（二选一）
+
+- 返回 JSON（含识别结果与可选 audioUrl）
+  - 文件上传：
+    - `curl -X POST "http://localhost:6039/aihuman/aihumanConfig/asr/{id}" -H "Authorization: Bearer <token>" -F "audio=@voice.wav"`
+  - Base64 上传：
+    - `curl -X POST "http://localhost:6039/aihuman/aihumanConfig/asr/{id}" -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Bearer <token>" -d "audioBase64=$(base64 -w0 voice.wav)"`
+
+- 直接返回音频字节（前端创建 Blob 播放）
+  - 文件上传：
+    - `curl -X POST "http://localhost:6039/aihuman/aihumanConfig/asr/voice/{id}" -H "Authorization: Bearer <token>" -F "audio=@voice.wav" -o wakeup.wav`
+  - Base64 上传：
+    - `curl -X POST "http://localhost:6039/aihuman/aihumanConfig/asr/voice/{id}" -H "Content-Type: application/x-www-form-urlencoded" -H "Authorization: Bearer <token>" -d "audioBase64=$(base64 -w0 voice.wav)" -o wakeup.wav`
+
+- 拉取音频文件（兜底）
+  - `curl -I "http://localhost:6039/voice/voice_YYYYMMDDHHMMSS_xxxxxxxx.wav"`
+
+
+
+
+# 接下来的任务
+在ruoyi-aihuman继续迭代功能
+
+## 要求
+1、要符合这个工程文件的目录结构和代码规范
+2、要在这个工程文件的基础上继续迭代，不能完全重新开始
+
+## 调整功能
+### AihumanConfig 的 actionParams（Json）
+{
+    "platform": "live2d",
+    "Expressions": [
+        {
+            "Name": "kaixin",
+            "action_code": "smile_action"
+        },
+        {
+            "Name": "shibai",
+            "action_code": "cry_action"
+        }
+    ],
+    "WakeUp": {
+        "action_code": "start_interaction",
+        "responses": "主人我在呢！"
+    },
+    // 某些数字人额外有StandBy
+    "StandBy": {
+        "action_code": "stop_interaction",
+        "responses": "主人再见啦！"
+    }
+}
+1、StandBy 与 WakeUp 是相反的逻辑，目前后端已经实现了 WakeUp ，现在需要添加 StandBy 功能
+2、WakeUp 是数字人唤醒，也就是数字人可以开始响应指令和交互， StandBy 让数字人停止响应指令
+3、参考下 WakeUp 的实现方式，添加 StandBy 功能

@@ -78,6 +78,8 @@ public class AihumanVolcengineController {
             headers.setContentType(MediaType.parseMediaType("audio/wav"));
             headers.setContentDispositionFormData("attachment", "voice_" + System.currentTimeMillis() + ".wav");
             headers.setContentLength(audioData.length);
+            headers.add("Accept-Ranges", "bytes");
+            headers.add("Access-Control-Allow-Origin", "*");
 
             log.info("语音生成成功并返回，长度: {} bytes", audioData.length);
             return new ResponseEntity<>(audioData, headers, HttpStatus.OK);
@@ -446,8 +448,14 @@ public class AihumanVolcengineController {
                 client.closeBlocking();
             }
 
-            // 返回音频文件的访问路径
-            return "/voice/" + fileName;
+            // 返回音频文件的绝对访问地址
+            String absoluteUrl = org.springframework.web.servlet.support.ServletUriComponentsBuilder
+                    .fromCurrentContextPath()
+                    .path("/voice/")
+                    .path(fileName)
+                    .build()
+                    .toUriString();
+            return absoluteUrl;
         } catch (Exception e) {
             log.error("Error calling Volcengine TTS API: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to generate voice", e);
